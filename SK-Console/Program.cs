@@ -1,5 +1,4 @@
 ﻿using AIDogConsole;
-using Azure.AI.OpenAI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
@@ -8,8 +7,17 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 var configuration = new ConfigurationBuilder().AddUserSecrets<Program>().Build();
 
+Uri robotEndpoint;
+if (args.Length > 0)
+{
+    robotEndpoint = new Uri(args[0]);
+}
+else
+{
+    robotEndpoint = new Uri(configuration["Endpoint"]!);
+}
+
 var apiKey = configuration["ApiKey"]!;
-var robotEndpoint = new Uri(configuration["Endpoint"]!);
 
 var services = new ServiceCollection();
 services.AddSingleton(new AIDogClient(httpClient: HttpClientProvider.GetHttpClient(), endpoint: robotEndpoint))
@@ -31,6 +39,17 @@ var aiSightDetail = (await kernel.InvokePromptAsync("What do you see?", new(sett
 
 Console.WriteLine(aiSightDetail);
 
+//while (true)
+//{
+//    Console.WriteLine("Enter your command");
+//    var userCommand = Console.ReadLine();
+//    aiSightDetail = (await kernel.InvokePromptAsync(userCommand, new(settings))).ToString();
+//
+//    Console.WriteLine($"Sigh Observation{aiSightDetail}");
+//}
+//
+//return;
+
 int maxIterations = 5;
 int currentIteration = 0;
 while (currentIteration < maxIterations)
@@ -46,7 +65,7 @@ while (currentIteration < maxIterations)
     var aiCommand = await chatCompletion.GetChatMessageContentAsync(commandChat, settings);
     Console.WriteLine($"AI Command: {aiCommand}");
     aiSightDetail = (await kernel.InvokePromptAsync(aiCommand.Content!, new(settings))).ToString();
-    
+
     Console.WriteLine($"Sigh Observation{aiSightDetail}");
     currentIteration++;
 }
